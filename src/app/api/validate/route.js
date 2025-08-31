@@ -3,15 +3,16 @@ import { supabase } from '../../../lib/supabase';
 
 export async function POST(request) {
   try {
-    const { apiKey } = await request.json();
+    const apiKey = request.headers.get('x-apikey-header');
+    const body = await request.json();
 
     if (!apiKey) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'API key is required',
+        {
+          success: false,
+          message: 'API key is required in x-apikey-header',
           error: 'MISSING_API_KEY'
-        }, 
+        },
         { status: 400 }
       );
     }
@@ -73,16 +74,15 @@ export async function POST(request) {
 
 // Also support GET requests for testing
 export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const apiKey = searchParams.get('apiKey');
+  const apiKey = request.headers.get('x-apikey-header');
 
   if (!apiKey) {
     return NextResponse.json(
-      { 
-        success: false, 
-        message: 'API key is required. Use ?apiKey=your_key_here',
+      {
+        success: false,
+        message: 'API key is required in x-apikey-header',
         error: 'MISSING_API_KEY'
-      }, 
+      },
       { status: 400 }
     );
   }

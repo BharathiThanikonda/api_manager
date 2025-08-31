@@ -1,0 +1,183 @@
+{
+  "info": {
+    "name": "API Manager - Local Testing",
+    "description": "Collection for testing API Manager endpoints on localhost",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "api_key",
+      "value": "your_actual_api_key_here",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Validate API Key (GET) - Local",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-apikey-header",
+            "value": "{{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/validate",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "validate"]
+        },
+        "description": "Validate an API key using GET request on localhost"
+      },
+      "response": []
+    },
+    {
+      "name": "Validate API Key (POST) - Local",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-apikey-header",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{base_url}}/validate",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "validate"]
+        },
+        "description": "Validate an API key using POST request on localhost"
+      },
+      "response": []
+    },
+    {
+      "name": "Get API Keys - Local",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-apikey-header",
+            "value": "{{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/keys",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "keys"]
+        },
+        "description": "Get all API keys and statistics on localhost"
+      },
+      "response": []
+    },
+    {
+      "name": "Test Invalid API Key - Local",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-apikey-header",
+            "value": "invalid_key_123"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/validate",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "validate"]
+        },
+        "description": "Test with an invalid API key to verify error handling on localhost"
+      },
+      "response": []
+    },
+    {
+      "name": "Test Missing API Key - Local",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/validate",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "validate"]
+        },
+        "description": "Test without API key to verify error handling on localhost"
+      },
+      "response": []
+    },
+    {
+      "name": "GitHub Summarizer (GET) - Local",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-apikey-header",
+            "value": "{{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/githubsummarizer?repositoryUrl=https://github.com/facebook/react&summaryType=general",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "githubsummarizer"],
+          "query": [
+            {
+              "key": "repositoryUrl",
+              "value": "https://github.com/facebook/react"
+            },
+            {
+              "key": "summaryType",
+              "value": "general"
+            }
+          ]
+        },
+        "description": "Summarize a GitHub repository using LangChain and README content via GET request on localhost"
+      },
+      "response": []
+    },
+    {
+      "name": "GitHub Summarizer (POST) - Local",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-apikey-header",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"repositoryUrl\": \"https://github.com/facebook/react\",\n  \"summaryType\": \"technical\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/githubsummarizer",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "githubsummarizer"]
+        },
+        "description": "Summarize a GitHub repository using LangChain and README content via POST request on localhost"
+      },
+      "response": []
+    },
+
+  ]
+}

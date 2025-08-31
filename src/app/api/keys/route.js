@@ -3,16 +3,15 @@ import { supabase } from '../../../lib/supabase';
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const apiKey = searchParams.get('apiKey');
+    const apiKey = request.headers.get('x-apikey-header');
 
     if (!apiKey) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'API key is required for authentication',
+        {
+          success: false,
+          message: 'API key is required in x-apikey-header',
           error: 'MISSING_API_KEY'
-        }, 
+        },
         { status: 401 }
       );
     }
