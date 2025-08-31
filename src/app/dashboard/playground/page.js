@@ -104,8 +104,8 @@ export default function Playground() {
                   <div>
                     <h3 className="text-sm font-medium text-blue-900">How it works</h3>
                     <p className="text-sm text-blue-700 mt-1">
-                      Submit your API key to validate access. If valid, you'll be redirected to the protected area.
-                      For testing, use any key starting with 'tvly-' and longer than 20 characters.
+                      Submit your API key to validate access. If valid, you&apos;ll be redirected to the protected area.
+                      For testing, use any key starting with &apos;tvly-&apos; and longer than 20 characters.
                     </p>
                   </div>
                 </div>

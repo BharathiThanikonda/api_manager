@@ -608,7 +608,7 @@ export default function Dashboard() {
                   )}
                   
                   <p className="text-xs text-gray-500">
-                    * If the combined usage of all your keys exceeds your plan's limit, all requests will be rejected.
+                    * If the combined usage of all your keys exceeds your plan&apos;s limit, all requests will be rejected.
                   </p>
                 </div>
                 
@@ -653,7 +653,7 @@ export default function Dashboard() {
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Delete API Key</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Are you sure you want to delete the API key <strong>"{deletePopup.key.name}"</strong>?
+                  Are you sure you want to delete the API key <strong>&quot;{deletePopup.key.name}&quot;</strong>?
                 </p>
                 <p className="text-xs text-gray-400 mb-6">
                   This action cannot be undone. The API key will be permanently removed.

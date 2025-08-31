@@ -105,7 +105,7 @@ export default function Sidebar() {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, startX, startWidth]);
+  }, [isDragging, startX, startWidth, handleMouseMove, handleMouseUp]);
 
   return (
     <div 
