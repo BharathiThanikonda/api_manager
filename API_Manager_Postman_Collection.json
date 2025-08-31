@@ -1,0 +1,118 @@
+{
+  "info": {
+    "name": "API Manager",
+    "description": "Collection for testing API Manager endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://your-domain.com/api",
+      "type": "string"
+    },
+    {
+      "key": "api_key",
+      "value": "your_actual_api_key_here",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Validate API Key (GET)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/validate?apiKey={{api_key}}",
+          "host": ["{{base_url}}"],
+          "path": ["validate"],
+          "query": [
+            {
+              "key": "apiKey",
+              "value": "{{api_key}}"
+            }
+          ]
+        },
+        "description": "Validate an API key using GET request"
+      },
+      "response": []
+    },
+    {
+      "name": "Validate API Key (POST)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"apiKey\": \"{{api_key}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/validate",
+          "host": ["{{base_url}}"],
+          "path": ["validate"]
+        },
+        "description": "Validate an API key using POST request"
+      },
+      "response": []
+    },
+    {
+      "name": "Get API Keys",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/keys?apiKey={{api_key}}",
+          "host": ["{{base_url}}"],
+          "path": ["keys"],
+          "query": [
+            {
+              "key": "apiKey",
+              "value": "{{api_key}}"
+            }
+          ]
+        },
+        "description": "Get all API keys and statistics"
+      },
+      "response": []
+    },
+    {
+      "name": "Test Invalid API Key",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/validate?apiKey=invalid_key_123",
+          "host": ["{{base_url}}"],
+          "path": ["validate"],
+          "query": [
+            {
+              "key": "apiKey",
+              "value": "invalid_key_123"
+            }
+          ]
+        },
+        "description": "Test with an invalid API key to verify error handling"
+      },
+      "response": []
+    },
+    {
+      "name": "Test Missing API Key",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/validate",
+          "host": ["{{base_url}}"],
+          "path": ["validate"]
+        },
+        "description": "Test without API key to verify error handling"
+      },
+      "response": []
+    }
+  ]
+}
