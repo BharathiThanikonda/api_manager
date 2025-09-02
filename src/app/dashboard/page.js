@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { supabase } from '../../lib/supabase';
+import Image from 'next/image';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -74,7 +75,7 @@ export default function Dashboard() {
     }
   };
 
-  const loadUserProfile = async () => {
+  const loadUserProfile = useCallback(async () => {
     if (session?.user?.email) {
       try {
         const { data, error } = await supabase
@@ -92,13 +93,13 @@ export default function Dashboard() {
         console.error('Error loading user profile:', error);
       }
     }
-  };
+  }, [session?.user?.email]);
 
   // Load API keys from Supabase
   useEffect(() => {
     loadApiKeys();
     loadUserProfile();
-  }, [session]);
+  }, [session, loadUserProfile]);
 
   // Close popup when clicking outside
   useEffect(() => {
@@ -335,10 +336,12 @@ export default function Dashboard() {
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-2">
                     {session.user?.image && (
-                      <img
+                      <Image
                         className="h-8 w-8 rounded-full"
                         src={session.user.image}
                         alt={session.user.name}
+                        width={32}
+                        height={32}
                       />
                     )}
                     <div className="text-sm">
@@ -451,10 +454,12 @@ export default function Dashboard() {
                   <div className="space-y-4">
                     <div className="flex items-center space-x-4">
                       {userProfile.image_url && (
-                        <img
+                        <Image
                           className="h-16 w-16 rounded-full"
                           src={userProfile.image_url}
                           alt={userProfile.name}
+                          width={64}
+                          height={64}
                         />
                       )}
                       <div>

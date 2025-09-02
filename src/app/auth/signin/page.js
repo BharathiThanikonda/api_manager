@@ -2,6 +2,7 @@
 
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useState } from 'react';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
@@ -50,10 +51,12 @@ export default function LoginPage() {
             </h2>
             <div className="mt-4 flex items-center justify-center space-x-3">
               {session.user?.image && (
-                <img
+                <Image
                   className="h-10 w-10 rounded-full"
                   src={session.user.image}
                   alt={session.user.name}
+                  width={40}
+                  height={40}
                 />
               )}
               <div className="text-left">

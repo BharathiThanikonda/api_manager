@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -73,27 +73,27 @@ export default function Sidebar() {
 
   ];
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = useCallback((e) => {
     setIsDragging(true);
     setStartX(e.clientX);
     setStartWidth(sidebarRef.current.offsetWidth);
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
-  };
+  }, []);
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = useCallback((e) => {
     if (!isDragging) return;
     
     const deltaX = e.clientX - startX;
     const newWidth = Math.max(200, Math.min(400, startWidth + deltaX));
     sidebarRef.current.style.width = `${newWidth}px`;
-  };
+  }, [isDragging, startX, startWidth]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
-  };
+  }, []);
 
   useEffect(() => {
     if (isDragging) {

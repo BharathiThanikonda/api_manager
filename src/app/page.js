@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { GitBranch, Star, GitPullRequest, TrendingUp, Zap, Shield, BarChart3, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import Image from "next/image";
 
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -104,10 +105,12 @@ export default function HomePage() {
                   </span>
                   {session.user?.image && (
                     <div className="ring-2 ring-red-200 ring-offset-2 ring-offset-white">
-                      <img
+                      <Image
                         className="h-8 w-8 rounded-full"
                         src={session.user.image}
                         alt={session.user.name}
+                        width={32}
+                        height={32}
                       />
                     </div>
                   )}
@@ -189,10 +192,12 @@ export default function HomePage() {
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
                       {session.user?.image && (
-                        <img
+                        <Image
                           className="h-10 w-10 rounded-full"
                           src={session.user.image}
                           alt={session.user.name}
+                          width={40}
+                          height={40}
                         />
                       )}
                       <div>
