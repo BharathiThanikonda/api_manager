@@ -133,16 +133,8 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       message: 'GitHub repository summarized successfully',
-      data: {
-        repositoryUrl,
-        summaryType: summaryType || 'general',
-        readme: readmeResult,
-        summary: summaryResult,
-        keyId: keyData.id,
-        keyName: keyData.name,
-        usage: keyData.usage + 1,
-        lastUsed: new Date().toISOString()
-      }
+      summary: summaryResult.summary,
+      cool_facts: summaryResult.cool_facts
     });
 
   } catch (error) {
@@ -220,16 +212,8 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       message: 'GitHub repository summarized successfully',
-      data: {
-        repositoryUrl,
-        summaryType,
-        readme: readmeResult,
-        summary: summaryResult,
-        keyId: keyData.id,
-        keyName: keyData.name,
-        usage: keyData.usage,
-        lastUsed: keyData.last_used
-      }
+      summary: summaryResult.summary,
+      cool_facts: summaryResult.cool_facts
     });
 
   } catch (error) {

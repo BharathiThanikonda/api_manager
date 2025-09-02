@@ -2,15 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
 import { supabase } from '../../lib/supabase';
 
 export default function Dashboard() {
+  const { data: session, status } = useSession();
   const [apiKeys, setApiKeys] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingKey, setEditingKey] = useState(null);
   const [deletePopup, setDeletePopup] = useState({ show: false, key: null, position: { x: 0, y: 0 } });
   const [visibleKeys, setVisibleKeys] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -19,25 +22,6 @@ export default function Dashboard() {
     monthlyLimit: false,
     limitValue: 1000
   });
-
-  // Load API keys from Supabase
-  useEffect(() => {
-    loadApiKeys();
-  }, []);
-
-  // Close popup when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (deletePopup.show) {
-        setDeletePopup({ show: false, key: null, position: { x: 0, y: 0 } });
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [deletePopup.show]);
 
   const loadApiKeys = async () => {
     try {
@@ -89,6 +73,76 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  const loadUserProfile = async () => {
+    if (session?.user?.email) {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', session.user.email)
+          .single();
+
+        if (error) {
+          console.error('Error loading user profile:', error);
+        } else {
+          setUserProfile(data);
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+      }
+    }
+  };
+
+  // Load API keys from Supabase
+  useEffect(() => {
+    loadApiKeys();
+    loadUserProfile();
+  }, [session]);
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (deletePopup.show) {
+        setDeletePopup({ show: false, key: null, position: { x: 0, y: 0 } });
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [deletePopup.show]);
+
+  // Show loading state while session is loading
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
+          <p className="text-gray-600 mb-6">Please sign in to access the dashboard.</p>
+          <button
+            onClick={() => window.location.href = '/auth/signin'}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleCreate = () => {
     setEditingKey(null);
@@ -153,7 +207,7 @@ export default function Dashboard() {
       
       // Show success notification
       const notification = document.createElement('div');
-      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
       notification.textContent = 'API key deleted successfully!';
       document.body.appendChild(notification);
       setTimeout(() => {
@@ -161,40 +215,8 @@ export default function Dashboard() {
       }, 2000);
       
     } catch (error) {
-      console.error('Error:', error);
-      // Show error notification instead of alert
-      const notification = document.createElement('div');
-      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      notification.textContent = 'An error occurred while deleting the API key';
-      document.body.appendChild(notification);
-      setTimeout(() => {
-        document.body.removeChild(notification);
-      }, 3000);
+      console.error('Error deleting API key:', error);
     }
-  };
-
-  const handleView = (key) => {
-    setVisibleKeys(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(key.id)) {
-        newSet.delete(key.id);
-      } else {
-        newSet.add(key.id);
-      }
-      return newSet;
-    });
-  };
-
-  const handleCopy = (key) => {
-    navigator.clipboard.writeText(key.key);
-    // Show a toast notification instead of alert
-    const notification = document.createElement('div');
-    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-    notification.textContent = 'API key copied to clipboard!';
-    document.body.appendChild(notification);
-    setTimeout(() => {
-      document.body.removeChild(notification);
-    }, 2000);
   };
 
   const handleSubmit = async (e) => {
@@ -208,87 +230,84 @@ export default function Dashboard() {
           .update({
             name: formData.name,
             key_type: formData.keyType,
-            monthly_limit: formData.monthlyLimit ? formData.limitValue : null
+            updated_at: new Date().toISOString()
           })
           .eq('id', editingKey.id);
 
         if (error) {
           console.error('Error updating API key:', error);
-          // Show error notification instead of alert
-          const notification = document.createElement('div');
-          notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-          notification.textContent = `Failed to update API key: ${error.message}`;
-          document.body.appendChild(notification);
-          setTimeout(() => {
-            document.body.removeChild(notification);
-          }, 3000);
           return;
         }
       } else {
         // Create new key
-        const fullKey = `tvly-${Math.random().toString(36).substr(2, 9)}-${Math.random().toString(36).substr(2, 30)}`;
+        const newKey = {
+          name: formData.name,
+          key: `tvly-${formData.keyType === 'development' ? 'dev' : 'prod'}-${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`,
+          key_type: formData.keyType,
+          status: 'active',
+          usage: 0
+        };
+
         const { error } = await supabase
           .from('api_keys')
-          .insert({
-            name: formData.name,
-            key: fullKey,
-            key_type: formData.keyType,
-            monthly_limit: formData.monthlyLimit ? formData.limitValue : null,
-            status: 'active',
-            usage: 0
-          });
+          .insert([newKey]);
 
         if (error) {
           console.error('Error creating API key:', error);
-          // Show error notification instead of alert
-          const notification = document.createElement('div');
-          notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-          notification.textContent = `Failed to create API key: ${error.message}`;
-          document.body.appendChild(notification);
-          setTimeout(() => {
-            document.body.removeChild(notification);
-          }, 3000);
           return;
         }
       }
-      
+
       // Reload the API keys from database
       await loadApiKeys();
+      
+      // Close modal and reset form
       setIsModalOpen(false);
+      setEditingKey(null);
+      setFormData({
+        name: '',
+        description: '',
+        permissions: [],
+        keyType: 'development',
+        monthlyLimit: false,
+        limitValue: 1000
+      });
+      
+    } catch (error) {
+      console.error('Error saving API key:', error);
+    }
+  };
+
+  const handleView = (key) => {
+    const newVisibleKeys = new Set(visibleKeys);
+    if (newVisibleKeys.has(key.id)) {
+      newVisibleKeys.delete(key.id);
+    } else {
+      newVisibleKeys.add(key.id);
+    }
+    setVisibleKeys(newVisibleKeys);
+  };
+
+  const handleCopy = async (key) => {
+    try {
+      await navigator.clipboard.writeText(key.key);
       
       // Show success notification
       const notification = document.createElement('div');
       notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      notification.textContent = editingKey ? 'API key updated successfully!' : 'API key created successfully!';
+      notification.textContent = 'API key copied to clipboard!';
       document.body.appendChild(notification);
       setTimeout(() => {
         document.body.removeChild(notification);
       }, 2000);
-      
     } catch (error) {
-      console.error('Error:', error);
-      // Show error notification instead of alert
-      const notification = document.createElement('div');
-      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      notification.textContent = 'An error occurred';
-      document.body.appendChild(notification);
-      setTimeout(() => {
-        document.body.removeChild(notification);
-      }, 3000);
+      console.error('Failed to copy API key:', error);
     }
   };
 
-  const togglePermission = (permission) => {
-    setFormData(prev => ({
-      ...prev,
-      permissions: prev.permissions.includes(permission)
-        ? prev.permissions.filter(p => p !== permission)
-        : [...prev.permissions, permission]
-    }));
-  };
-
-  const totalUsage = apiKeys.reduce((sum, key) => sum + key.usage, 0);
-  const maxCredits = 1000;
+  // Calculate usage statistics
+  const totalUsage = apiKeys.reduce((sum, key) => sum + (key.usage || 0), 0);
+  const maxCredits = 1000; // This should come from user's plan
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -310,6 +329,34 @@ export default function Dashboard() {
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-sm text-gray-600">Operational</span>
               </div>
+              
+              {/* User Profile */}
+              {session && (
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    {session.user?.image && (
+                      <img
+                        className="h-8 w-8 rounded-full"
+                        src={session.user.image}
+                        alt={session.user.name}
+                      />
+                    )}
+                    <div className="text-sm">
+                      <p className="font-medium text-gray-900">{session.user?.name}</p>
+                      <p className="text-gray-500">{session.user?.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="text-gray-400 hover:text-gray-600"
+                    title="Sign Out"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
+                </div>
+              )}
               
               {/* Social Icons */}
               <div className="flex items-center space-x-3">
@@ -389,6 +436,61 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
+
+          {/* User Profile Section */}
+          {userProfile && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="p-6 border-b border-gray-200">
+                <h3 className="text-xl font-semibold text-gray-900">User Profile</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Your account information and login history
+                </p>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-4">
+                      {userProfile.image_url && (
+                        <img
+                          className="h-16 w-16 rounded-full"
+                          src={userProfile.image_url}
+                          alt={userProfile.name}
+                        />
+                      )}
+                      <div>
+                        <h4 className="text-lg font-medium text-gray-900">{userProfile.name}</h4>
+                        <p className="text-sm text-gray-500">{userProfile.email}</p>
+                        <p className="text-xs text-gray-400">Member since {new Date(userProfile.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <h5 className="text-sm font-medium text-gray-700 mb-2">Account Details</h5>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Provider:</span>
+                          <span className="text-gray-900 capitalize">{userProfile.provider}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Last Login:</span>
+                          <span className="text-gray-900">
+                            {userProfile.last_login ? new Date(userProfile.last_login).toLocaleString() : 'Never'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Account Created:</span>
+                          <span className="text-gray-900">
+                            {new Date(userProfile.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* API Keys Section */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -507,129 +609,92 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Create/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-lg bg-white">
-            <div className="mt-3">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {editingKey ? 'Edit API Key' : 'Create a new API key'}
-              </h3>
-              <p className="text-sm text-gray-600 mb-6">
-                {editingKey ? 'Modify the details of the existing API key.' : 'Enter a name and limit for the new API key.'}
-              </p>
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsModalOpen(false)}></div>
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 relative">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              {editingKey ? 'Edit API Key' : 'Create New API Key'}
+            </h2>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Name Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter API key name"
+                  required
+                />
+              </div>
               
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Key Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Key Name — A unique name to identify this key
-                  </label>
+              {/* Key Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Key Type
+                </label>
+                <select
+                  value={formData.keyType}
+                  onChange={(e) => setFormData({...formData, keyType: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="development">Development</option>
+                  <option value="production">Production</option>
+                </select>
+              </div>
+                
+              {/* Monthly Usage Limit */}
+              <div className="space-y-3">
+                <label className="flex items-center space-x-2">
                   <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="Key Name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
+                    type="checkbox"
+                    checked={formData.monthlyLimit}
+                    onChange={(e) => setFormData({...formData, monthlyLimit: e.target.checked})}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
-                </div>
+                  <span className="text-sm font-medium text-gray-700">Limit monthly usage*</span>
+                </label>
                 
-                {/* Key Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Key Type — Choose the environment for this key
-                  </label>
-                  <div className="space-y-3">
-                    <label className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="radio"
-                        name="keyType"
-                        value="development"
-                        checked={formData.keyType === 'development'}
-                        onChange={(e) => setFormData({...formData, keyType: e.target.value})}
-                        className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                          </svg>
-                          <span className="font-medium text-gray-900">Development</span>
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">Rate limited to 100 requests/minute</p>
-                      </div>
-                    </label>
-                    
-                    <label className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="radio"
-                        name="keyType"
-                        value="production"
-                        checked={formData.keyType === 'production'}
-                        onChange={(e) => setFormData({...formData, keyType: e.target.value})}
-                        className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                          <span className="font-medium text-gray-900">Production</span>
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">Rate limited to 1,000 requests/minute</p>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-                
-                {/* Monthly Usage Limit */}
-                <div className="space-y-3">
-                  <label className="flex items-center space-x-2">
+                {formData.monthlyLimit && (
+                  <div className="ml-6">
                     <input
-                      type="checkbox"
-                      checked={formData.monthlyLimit}
-                      onChange={(e) => setFormData({...formData, monthlyLimit: e.target.checked})}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      type="number"
+                      value={formData.limitValue}
+                      onChange={(e) => setFormData({...formData, limitValue: parseInt(e.target.value) || 0})}
+                      className="w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      min="1"
                     />
-                    <span className="text-sm font-medium text-gray-700">Limit monthly usage*</span>
-                  </label>
-                  
-                  {formData.monthlyLimit && (
-                    <div className="ml-6">
-                      <input
-                        type="number"
-                        value={formData.limitValue}
-                        onChange={(e) => setFormData({...formData, limitValue: parseInt(e.target.value) || 0})}
-                        className="w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        min="1"
-                      />
-                    </div>
-                  )}
-                  
-                  <p className="text-xs text-gray-500">
-                    * If the combined usage of all your keys exceeds your plan&apos;s limit, all requests will be rejected.
-                  </p>
-                </div>
+                  </div>
+                )}
                 
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200"
-                  >
-                    {editingKey ? 'Update' : 'Create'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium transition-colors duration-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
+                <p className="text-xs text-gray-500">
+                  * If the combined usage of all your keys exceeds your plan&apos;s limit, all requests will be rejected.
+                </p>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200"
+                >
+                  {editingKey ? 'Update' : 'Create'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
