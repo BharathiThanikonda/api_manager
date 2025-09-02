@@ -368,7 +368,7 @@ export default function HomePage() {
                       <BarChart3 className="h-8 w-8 text-gray-500" />
                     </div>
                     <p className="text-gray-500">
-                      Enter a repository URL and click "Analyze Repository" to see the results
+                      Enter a repository URL and click &quot;Analyze Repository&quot; to see the results
                     </p>
                   </div>
                 )}
@@ -592,7 +592,7 @@ export default function HomePage() {
               About GitAnalyzer
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 mb-8 max-w-2xl mx-auto px-4">
-              We're passionate about making GitHub repository analysis accessible to everyone. 
+              We&apos;re passionate about making GitHub repository analysis accessible to everyone. 
               Our platform provides deep insights that help developers understand project health, 
               track trends, and make informed decisions about their codebase.
             </p>
