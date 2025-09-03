@@ -295,9 +295,6 @@ export default function HomePage() {
                   Start Free Analysis
                 </Button>
               )}
-              <Button size="lg" variant="outline" className="text-lg px-8 bg-white/80 backdrop-blur-sm border-gray-300 hover:bg-white hover:border-red-300 text-gray-700 hover:text-red-600">
-                View API Docs
-              </Button>
             </div>
           </div>
         </section>
