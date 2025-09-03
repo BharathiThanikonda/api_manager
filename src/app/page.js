@@ -13,11 +13,6 @@ export default function HomePage() {
   const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [demoUrl, setDemoUrl] = useState("");
-  const [demoResult, setDemoResult] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [responseTime, setResponseTime] = useState(0);
-  const [responseSize, setResponseSize] = useState(0);
 
   const handleGoogleSignIn = async () => {
     await signIn('google', { callbackUrl: '/dashboard' });
@@ -36,30 +31,36 @@ export default function HomePage() {
   };
 
   const handleDemoRequest = async () => {
-    setIsLoading(true);
-    setError(null);
-    setDemoResult(null);
-
-    try {
-      const startTime = performance.now();
-      const response = await fetch("/api/githubsummarizer", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ repositoryUrl: demoUrl }),
-      });
-      const endTime = performance.now();
-      const responseData = await response.json();
-
-      setResponseTime(Math.round(endTime - startTime));
-      setResponseSize(Math.round(JSON.stringify(responseData).length / 1024 * 100) / 100);
-      setDemoResult(responseData);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
+    if (!session) {
+      // If user is not authenticated, redirect to sign-in with the repository URL
+      await signIn('google', { callbackUrl: `/dashboard/playground?repo=${encodeURIComponent(demoUrl)}` });
+      return;
     }
+    
+    // If user is authenticated, redirect to playground with the repository URL
+    window.location.href = `/dashboard/playground?repo=${encodeURIComponent(demoUrl)}`;
+  };
+
+  const handleTryApi = () => {
+    window.location.href = '/dashboard/playground';
+  };
+
+  const handleHomeClick = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Mock demo data for demonstration purposes
+  const mockDemoResult = {
+    summary: "LangChain is a powerful framework for developing applications powered by language models. It provides tools for building LLM applications with prompt management and agent frameworks.",
+    cool_facts: [
+      "Over 50,000 stars on GitHub",
+      "Used by thousands of developers worldwide",
+      "Supports multiple language models"
+    ],
+    stars: 56789,
+    latest_version: "v0.1.0",
+    website_url: "https://langchain.com",
+    license: "MIT"
   };
 
   return (
@@ -71,11 +72,17 @@ export default function HomePage() {
             <div className="p-2 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg">
               <GitBranch className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">GitAnalyzer</span>
+            <span className="text-xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">GitInsights</span>
           </div>
           
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center space-x-6">
+            <button 
+              onClick={handleHomeClick}
+              className="text-gray-700 hover:text-red-600 transition-colors font-medium"
+            >
+              Home
+            </button>
             <Link href="#features" className="text-gray-700 hover:text-red-600 transition-colors font-medium">
               Features
             </Link>
@@ -150,6 +157,15 @@ export default function HomePage() {
             <div className="px-4 py-4 space-y-4">
               {/* Mobile Navigation Links */}
               <div className="space-y-3">
+                <button 
+                  onClick={() => {
+                    handleHomeClick();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="block text-gray-700 hover:text-red-600 transition-colors font-medium py-2 w-full text-left"
+                >
+                  Home
+                </button>
                 <Link 
                   href="#features" 
                   className="block text-gray-700 hover:text-red-600 transition-colors font-medium py-2"
@@ -265,14 +281,17 @@ export default function HomePage() {
               version changes through our powerful API.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
+              <Button size="lg" className="text-lg px-8 bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-xl transition-all duration-300" onClick={handleTryApi}>
+                Try the API
+              </Button>
               {session ? (
-                <Button size="lg" className="text-lg px-8 bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-xl transition-all duration-300" asChild>
+                <Button size="lg" variant="outline" className="text-lg px-8 bg-white/80 backdrop-blur-sm border-gray-300 hover:bg-white hover:border-red-300 text-gray-700 hover:text-red-600" asChild>
                   <Link href="/dashboard">
                     Go to Dashboard
                   </Link>
                 </Button>
               ) : (
-                <Button size="lg" className="text-lg px-8 bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-xl transition-all duration-300" onClick={handleGoogleSignIn}>
+                <Button size="lg" variant="outline" className="text-lg px-8 bg-white/80 backdrop-blur-sm border-gray-300 hover:bg-white hover:border-red-300 text-gray-700 hover:text-red-600" onClick={handleGoogleSignIn}>
                   Start Free Analysis
                 </Button>
               )}
@@ -289,7 +308,7 @@ export default function HomePage() {
           <div className="container mx-auto max-w-6xl relative z-10">
             <div className="text-center mb-12 sm:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                See GitAnalyzer in Action
+                See GitInsights in Action
               </h2>
               <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
                 Try our API with a real GitHub repository and see instant insights
@@ -299,7 +318,16 @@ export default function HomePage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Demo Input */}
               <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg">
-                <h3 className="text-xl font-semibold mb-4 text-gray-800">Try the API</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-gray-800">Try the API</h3>
+                  <Button 
+                    size="sm" 
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600"
+                    onClick={handleTryApi}
+                  >
+                    Go to Playground
+                  </Button>
+                </div>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -315,68 +343,68 @@ export default function HomePage() {
                   </div>
                   <button
                     onClick={handleDemoRequest}
-                    disabled={isLoading || !demoUrl}
+                    disabled={!demoUrl}
                     className="w-full bg-gradient-to-r from-red-500 to-orange-500 text-white py-3 px-6 rounded-lg font-semibold hover:from-red-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
-                    {isLoading ? (
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        Analyzing Repository...
-                      </div>
-                    ) : (
-                      'Analyze Repository'
-                    )}
+                    Try This Repository
                   </button>
                   <p className="text-sm text-gray-500 text-center">
-                    Enter any public GitHub repository URL to get instant insights
+                    Enter any public GitHub repository URL to try our API in the playground
                   </p>
                 </div>
               </div>
 
               {/* Demo Results */}
               <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg">
-                <h3 className="text-xl font-semibold mb-4 text-gray-800">API Response</h3>
-                {demoResult ? (
-                  <div className="space-y-4">
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-800 mb-2">Summary</h4>
-                      <p className="text-gray-700 text-sm leading-relaxed">
-                        {demoResult.summary}
-                      </p>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-800 mb-2">Cool Facts</h4>
-                      <ul className="space-y-2">
-                        {demoResult.cool_facts.map((fact, index) => (
-                          <li key={index} className="flex items-start">
-                            <div className="w-2 h-2 bg-gradient-to-r from-red-500 to-orange-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                            <span className="text-gray-700 text-sm leading-relaxed">{fact}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="text-xs text-gray-500 text-center">
-                      Response time: {responseTime}ms | Data size: {responseSize}KB
-                    </div>
-                  </div>
-                ) : error ? (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="flex items-center">
-                      <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-                      <span className="text-red-700 font-medium">Error</span>
-                    </div>
-                    <p className="text-red-600 text-sm mt-2">{error}</p>
-                  </div>
-                ) : (
-                  <div className="bg-gray-50 rounded-lg p-8 text-center">
-                    <div className="w-16 h-16 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <BarChart3 className="h-8 w-8 text-gray-500" />
-                    </div>
-                    <p className="text-gray-500">
-                      Enter a repository URL and click &quot;Analyze Repository&quot; to see the results
+                <h3 className="text-xl font-semibold mb-4 text-gray-800">Demo Response</h3>
+                <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-800 mb-2">Summary</h4>
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      {mockDemoResult.summary}
                     </p>
                   </div>
-                )}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-800 mb-2">Cool Facts</h4>
+                    <ul className="space-y-2">
+                      {mockDemoResult.cool_facts.map((fact, index) => (
+                        <li key={index} className="flex items-start">
+                          <div className="w-2 h-2 bg-gradient-to-r from-red-500 to-orange-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                          <span className="text-gray-700 text-sm leading-relaxed">{fact}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-800 mb-2">Repository Info</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Stars:</span>
+                        <span className="ml-2 font-medium text-gray-800">{mockDemoResult.stars.toLocaleString()} ⭐</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Latest Version:</span>
+                        <span className="ml-2 font-medium text-gray-800">{mockDemoResult.latest_version}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Website:</span>
+                        <span className="ml-2 font-medium text-gray-800">
+                          <a href={mockDemoResult.website_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                            {mockDemoResult.website_url}
+                          </a>
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">License:</span>
+                        <span className="ml-2 font-medium text-gray-800">{mockDemoResult.license}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 text-center">
+                    <p className="mb-2">This is a demo response. Sign in to try the real API!</p>
+                    <p>Response time: ~200ms | Data size: ~2.5KB</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -417,18 +445,6 @@ export default function HomePage() {
                   <CardTitle>Star Tracking</CardTitle>
                   <CardDescription>
                     Monitor star growth patterns, identify trending periods, and analyze popularity metrics over time
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="border-0 bg-white/70 backdrop-blur-sm hover:bg-white/90 transition-all duration-300 hover:shadow-xl hover:scale-105">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-500 rounded-lg flex items-center justify-center mb-4">
-                    <GitPullRequest className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle>Important Pull Requests</CardTitle>
-                  <CardDescription>
-                    Discover significant PRs, track merge patterns, and identify key contributors and their impact
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -567,26 +583,6 @@ export default function HomePage() {
         {/* Stats Section */}
         <section className="py-12 sm:py-20 px-4 relative">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-red-50"></div>
-          <div className="container mx-auto max-w-4xl relative z-10">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 text-center">
-              <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 sm:p-6 hover:bg-white/90 transition-all duration-300">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent mb-2">50K+</div>
-                <div className="text-sm sm:text-base text-gray-600">Repositories Analyzed</div>
-              </div>
-              <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 sm:p-6 hover:bg-white/90 transition-all duration-300">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">1M+</div>
-                <div className="text-sm sm:text-base text-gray-600">API Calls Made</div>
-              </div>
-              <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 sm:p-6 hover:bg-white/90 transition-all duration-300">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-2">5K+</div>
-                <div className="text-sm sm:text-base text-gray-600">Happy Developers</div>
-              </div>
-              <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 sm:p-6 hover:bg-white/90 transition-all duration-300">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">99.9%</div>
-                <div className="text-sm sm:text-base text-gray-600">Uptime</div>
-              </div>
-            </div>
-          </div>
         </section>
 
         {/* About Section */}
@@ -594,10 +590,10 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50"></div>
           <div className="container mx-auto max-w-4xl text-center relative z-10">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              About GitAnalyzer
+              About GitInsights
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 mb-8 max-w-2xl mx-auto px-4">
-              We&apos;re passionate about making GitHub repository analysis accessible to everyone. 
+              We&apos;re passionate about making GitHub repository insights accessible to everyone. 
               Our platform provides deep insights that help developers understand project health, 
               track trends, and make informed decisions about their codebase.
             </p>
@@ -635,23 +631,23 @@ export default function HomePage() {
               Ready to Analyze Your First Repository?
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 mb-8 max-w-2xl mx-auto px-4">
-              Join thousands of developers who trust GitAnalyzer for their repository insights
+              Join thousands of developers who trust GitInsights for their repository insights
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
+              <Button size="lg" className="text-lg px-8 bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-xl transition-all duration-300" onClick={handleTryApi}>
+                Try the API
+              </Button>
               {session ? (
-                <Button size="lg" className="text-lg px-8 bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-xl transition-all duration-300" asChild>
+                <Button size="lg" variant="outline" className="text-lg px-8 bg-white/80 backdrop-blur-sm border-gray-300 hover:bg-white hover:border-red-300 text-gray-700 hover:text-red-600" asChild>
                   <Link href="/dashboard">
                     Access Dashboard
                   </Link>
                 </Button>
               ) : (
-                <Button size="lg" className="text-lg px-8 bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-xl transition-all duration-300" onClick={handleGoogleSignIn}>
+                <Button size="lg" variant="outline" className="text-lg px-8 bg-white/80 backdrop-blur-sm border-gray-300 hover:bg-white hover:border-red-300 text-gray-700 hover:text-red-600" onClick={handleGoogleSignIn}>
                   Start Free Today
                 </Button>
               )}
-              <Button size="lg" variant="outline" className="text-lg px-8 bg-white/80 backdrop-blur-sm border-gray-300 hover:bg-white hover:border-red-300 text-gray-700 hover:text-red-600">
-                Contact Sales
-              </Button>
             </div>
           </div>
         </section>
@@ -665,9 +661,9 @@ export default function HomePage() {
                   <div className="p-2 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg">
                     <GitBranch className="h-6 w-6 text-white" />
                   </div>
-                  <span className="text-lg font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">GitAnalyzer</span>
+                  <span className="text-lg font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">GitInsights</span>
                 </div>
-                <p className="text-gray-300">Powerful GitHub repository analysis made simple.</p>
+                                  <p className="text-gray-300">Powerful GitHub repository insights made simple.</p>
               </div>
               <div>
                 <h3 className="font-semibold mb-4 text-white">Product</h3>
@@ -746,7 +742,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-              <p>&copy; 2024 GitAnalyzer. All rights reserved.</p>
+              <p>&copy; 2024 GitInsights. All rights reserved.</p>
             </div>
           </div>
         </footer>

@@ -28,3 +28,4 @@ export function getCurrentModel() {
 export function isAIEnabled() {
   return MODEL_CONFIG.CURRENT_MODEL !== MODEL_CONFIG.TEXT_ONLY;
 }
+

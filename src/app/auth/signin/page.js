@@ -3,6 +3,7 @@
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useState } from 'react';
 import Image from 'next/image';
+import BackButton from '../../components/BackButton';
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
@@ -94,6 +95,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
+        <div className="flex items-center justify-between">
+          <BackButton href="/" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+            <span>Back to Home</span>
+          </BackButton>
+        </div>
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
             Sign in to your account

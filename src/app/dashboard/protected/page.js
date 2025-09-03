@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import BackButton from '../../components/BackButton';
 
 export default function Protected() {
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -50,11 +51,16 @@ export default function Protected() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
           <div className="p-6 border-b border-gray-200">
             <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-2xl font-semibold text-gray-900">Protected Area</h1>
-                <p className="text-sm text-gray-600 mt-2">
-                  Welcome! You have successfully validated your API key.
-                </p>
+              <div className="flex items-center space-x-4">
+                <BackButton href="/dashboard/playground" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+                  <span>Back to Playground</span>
+                </BackButton>
+                <div>
+                  <h1 className="text-2xl font-semibold text-gray-900">Protected Area</h1>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Welcome! You have successfully validated your API key.
+                  </p>
+                </div>
               </div>
               <button
                 onClick={handleLogout}

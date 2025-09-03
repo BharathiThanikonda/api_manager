@@ -1,16 +1,79 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect, useCallback } from 'react';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(256);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [userInfo, setUserInfo] = useState({
+    name: '',
+    email: '',
+    avatar: null
+  });
+  const [isLoading, setIsLoading] = useState(true);
   const sidebarRef = useRef(null);
+
+  // Fetch user information on component mount
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        // Since you're already logged in, get user info from your session
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include' // Include cookies for session
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          if (userData.success && userData.data) {
+            setUserInfo({
+              name: userData.data.name || 'User',
+              email: userData.data.email || '',
+              avatar: userData.data.avatar_url || null
+            });
+          } else {
+            console.error('Invalid user data format');
+          }
+        } else {
+          console.error('Failed to fetch user profile');
+        }
+      } catch (error) {
+        console.error('Error fetching user info:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        // Clear any local storage or session storage
+        localStorage.clear();
+        sessionStorage.clear();
+        
+                       // Redirect to login page
+               router.push('/auth/signin');
+      } else {
+        console.error('Logout failed');
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
 
   const navigation = [
     {
@@ -33,15 +96,6 @@ export default function Sidebar() {
       )
     },
     {
-      name: 'Use Cases',
-      href: '/dashboard/use-cases',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-        </svg>
-      )
-    },
-    {
       name: 'Billing',
       href: '/dashboard/billing',
       icon: (
@@ -50,27 +104,6 @@ export default function Sidebar() {
         </svg>
       )
     },
-    {
-      name: 'Settings',
-      href: '/dashboard/settings',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      )
-    },
-    {
-      name: 'Documentation',
-      href: 'https://docs.tavily.com',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      ),
-      external: true
-    },
-
   ];
 
   const handleMouseDown = useCallback((e) => {
@@ -150,7 +183,7 @@ export default function Sidebar() {
 
       {/* Account Selector */}
       <div className="p-4 border-b border-gray-200">
-        <button className="w-full flex items-center justify-between p-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+        <div className="w-full flex items-center justify-between p-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
           <div className="flex items-center space-x-2">
             <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
               B
@@ -158,11 +191,11 @@ export default function Sidebar() {
             {!isCollapsed && <span className="text-sm font-medium text-gray-700">Personal</span>}
           </div>
           {!isCollapsed && (
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           )}
-        </button>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -227,17 +260,55 @@ export default function Sidebar() {
 
       {/* User Profile */}
       <div className="p-4 border-t border-gray-200">
-        <div className="flex items-center justify-between p-3 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors">
-          <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-              B
-            </div>
-            {!isCollapsed && <span className="text-sm font-medium text-gray-700">api-manager</span>}
+        <div className="flex items-center justify-between p-3 hover:bg-gray-100 rounded-lg transition-colors">
+          <div className="flex items-center space-x-3">
+            {isLoading ? (
+              <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+            ) : userInfo.avatar ? (
+              <Image 
+                src={userInfo.avatar} 
+                alt={userInfo.name}
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                {userInfo.name ? userInfo.name.charAt(0).toUpperCase() : 'U'}
+              </div>
+            )}
+            {!isCollapsed && (
+              <div className="flex flex-col">
+                {isLoading ? (
+                  <>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                    <div className="h-3 bg-gray-200 rounded animate-pulse w-24 mt-1"></div>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-sm font-medium text-gray-900">
+                      {userInfo.name || 'User'}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {userInfo.email || 'No email'}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
           {!isCollapsed && (
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleLogout}
+                className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                title="Logout"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            </div>
           )}
         </div>
       </div>
